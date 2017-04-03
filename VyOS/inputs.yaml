@@ -8,4 +8,3 @@ target_vnf_image_id: eeef13cb-2d9c-4c64-810f-eec397a8b86d
 target_vnf_flavor_id: 3b02a02a-b6d5-48be-8d01-b504c82bdcad 
 reference_vnf_image_id: eeef13cb-2d9c-4c64-810f-eec397a8b86d
 reference_vnf_flavor_id: 3b02a02a-b6d5-48be-8d01-b504c82bdcad 
-
