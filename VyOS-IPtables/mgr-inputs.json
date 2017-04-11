@@ -1,0 +1,24 @@
+{
+  "vfirewall_dataplane_port_name": "vfirewall_data_plane_port",
+  "data_plane_subnet_name": "data_plane_subnet",
+  "dmz_subnet_name": "dmz_subnet",
+  "mgmt_cidr": "172.16.0.0\/24",
+  "vfirewall_name": "vfirewall_iptables",
+  "vfirewall_dmz_port_name": "vfirewall_dmz_port",
+  "dmz_network_name": "dmz_network",
+  "vrouter_data_plane_port_name": "vrouter_data_plane_port",
+  "keypair_name": "cfy-agt-key",
+  "vfirewall_img_id": "f11f3715-88e9-4c56-b990-a4dd103a2606",
+  "external_network_name": "ext-net",
+  "vrouter_flavor_id": "3b02a02a-b6d5-48be-8d01-b504c82bdcad",
+  "vfirewall_agent_user": "ubuntu",
+  "vrouter_img_id": "eeef13cb-2d9c-4c64-810f-eec397a8b86d",
+  "vrouter_name": "vrouter-vyos",
+  "data_plane_network_name": "data_plane_network",
+  "ssh_key_filename": "~/.ssh/agent_key.pem",
+  "security_group_name": "vnf_test_security_group",
+  "vfirewall_flavor_id": "11e3a10e-c759-45cc-9730-b5ee5b40fd8a",
+  "mgmt_net": "cloudify-management-network"
+}
+
+
