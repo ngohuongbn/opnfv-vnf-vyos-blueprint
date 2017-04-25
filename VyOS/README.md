@@ -1,0 +1,1 @@
+# VyOS BGP peering blueprint

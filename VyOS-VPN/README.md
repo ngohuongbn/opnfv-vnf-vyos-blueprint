@@ -1,0 +1,1 @@
+# VyOS IPsec Site-to-Site VPN blueprint
