@@ -14,18 +14,18 @@ node_types:
         configure: scripts/vDPI/u14-config-ndpi.sh
         stop: scripts/vDPI/stop-ntopng.sh
  
-  cpe.nodes.Firewall:
+  e2e.nodes.MonitoredServer:
     derived_from: cloudify.openstack.nodes.Server
     properties:
       image:
-        default: { get_input: vfirewall_img_id }
+        default: { get_input: image }
       flavor:
-        default: { get_input: vfirewall_flavor_id }
+        default: { get_input: flavor }
       cloudify_agent:
         default:
-          user: { get_input: vfirewall_agent_user }
+          user: { get_input: agent_user }
     interfaces:
- 
+
       cloudify.interfaces.monitoring_agent:
           install:
             implementation: diamond.diamond_agent.tasks.install
@@ -36,12 +36,7 @@ node_types:
           start: diamond.diamond_agent.tasks.start
           stop: diamond.diamond_agent.tasks.stop
           uninstall: diamond.diamond_agent.tasks.uninstall
- 
-      ###########################################################
-      # Adding some collectors. These collectors are necessary
-      # for the Cloudify UI to display the deafult metrics.
-      ###########################################################
- 
+
       cloudify.interfaces.monitoring:
           start:
             implementation: diamond.diamond_agent.tasks.add_collectors

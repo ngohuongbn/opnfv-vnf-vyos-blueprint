@@ -8,10 +8,16 @@ imports:
   - http://www.getcloudify.org/spec/openstack-plugin/2.0.1/plugin.yaml
   - http://www.getcloudify.org/spec/diamond-plugin/1.3.5/plugin.yaml
   - types/cpe-types.yaml
+  - types/web-server-ops-type.yaml
+  - types/haproxy.yaml
  
 inputs:
   external_network_name:
     type: string
+
+  webserver_port:
+    type: integer
+    default: 80  
  
   mgmt_net:
     type: string
@@ -19,14 +25,6 @@ inputs:
 
   mgmt_cidr:
     type: string
-
-  lan_subnet_name:
-    type: string
-    default: lan_subnet
-
-  lan_network_name:
-    type: string
-    default: lan_network
 
   dmz_network_name:
     type: string
@@ -56,14 +54,14 @@ inputs:
     type: string
     default: vfirewall_dmz_port
 
-  vwanopz_dmz_port_name:
+  vids_dmz_port_name:
     type: string
-    default: vwanopz_dmz_port
-  
-  vwanopz_lan_port_name:
+    default: vids_dmz_port
+
+  haproxy_dmz_port_name:
     type: string
-    default: vwanopz_lan_port
- 
+    default: haproxy_dmz_port
+   
   security_group_name:
     type: string
     default: vnf_test_security_group
@@ -86,7 +84,7 @@ inputs:
   vrouter_flavor_id:
     type: string
  
-  vfirewall_agent_user:
+  agent_user:
     type: string
     default: ubuntu
  
@@ -94,21 +92,29 @@ inputs:
     type: string
     default: vFirewall
  
-  vfirewall_img_id:
+  image:
     type: string
  
-  vfirewall_flavor_id:
+  flavor:
     type: string
 
-  vwanopz_name: 
+  vids_name: 
     type: string
-    default: WAN Optimizer
+    default: vIDS Snort
 
-  vwanopz_img_id:
+  vids_img_id:
     type: string
 
-  vwanopz_flavor_id:
+  vids_flavor_id:
     type: string
+
+  number_of_instances:
+    description: |
+      The number of web server instances. Requests to the web servers will
+      be load balanced by the haproxy service.
+    type: integer
+    default: 2
+
  
 node_templates:
  
@@ -138,6 +144,7 @@ node_templates:
   ######################################################
   #                   IPtables Firewall                #
   ###################################################### 
+  
   iptables_daemon:
     type: cpe.daemon.IPtables
     relationships:
@@ -165,7 +172,7 @@ node_templates:
                 MGMT_CIDR: { get_input: mgmt_cidr } 
  
   vfirewall_host:
-    type: cpe.nodes.Firewall
+    type: e2e.nodes.MonitoredServer
     properties:     
       resource_id: { get_input: vfirewall_name }
       agent_config:
@@ -182,25 +189,97 @@ node_templates:
         type: cloudify.openstack.server_connected_to_security_group
 
   ######################################################
-  #                   WanOptimizer                     #
+  #                   vIDS Snort                       #
   ######################################################
  
-  vwanopz_host:
+  vids_host:
     type: cloudify.openstack.nodes.Server
     properties:     
-      resource_id: { get_input: vwanopz_name }
-      install_agent: false
-      server:
-        image: { get_input: vwanopz_img_id }
-        flavor: { get_input: vwanopz_flavor_id }
-      management_network_name: { get_property: [lan_network, resource_id] }
+      resource_id: { get_input: vids_name }
+      agent_config:
+        key: { get_property: [ keypair, private_key_path ] }
+      management_network_name: { get_input: mgmt_net }
     relationships:
       - target: keypair
         type: cloudify.openstack.server_connected_to_keypair        
-      - target: vwanopz_dmz_port
+      - target: vids_dmz_port
         type: cloudify.openstack.server_connected_to_port
       - target: security_group
         type: cloudify.openstack.server_connected_to_security_group
+
+  ######################################################
+  #                   Webserver                        #
+  ######################################################
+
+  apache2:
+    type: apache.nodes.WebServer
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: webserver_host
+      - type: app_connected_to_haproxy
+        target: haproxy
+        
+  webserver_host:
+    type: e2e.nodes.MonitoredServer
+
+    properties:
+      agent_config:
+        key: { get_property: [ keypair, private_key_path ] }
+      management_network_name: { get_input: mgmt_net }
+
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            args:
+              security_groups: [{ get_attribute: [ webserver_security_group, external_name ]}]
+
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: websrv_node_scaling_tier
+      - type: cloudify.openstack.server_connected_to_keypair
+        target: keypair
+      - type: cloudify.openstack.server_connected_to_port
+        target: webserver_dmz_port
+      - target: webserver_security_group
+        type: cloudify.openstack.server_connected_to_security_group
+
+  ######################################################
+  #                   Load Balancer                    #
+  ######################################################
+
+  haproxy:
+    type: e2e.nodes.MonitoredHAProxy
+    properties:
+      backend_app_port: { get_property: [ apache2, port ] }
+    relationships:
+      - target: haproxy_frontend_host
+        type: cloudify.relationships.contained_in
+
+  haproxy_frontend_host:
+    type: e2e.nodes.MonitoredServer
+
+    properties:
+      agent_config:
+        key: { get_property: [ keypair, private_key_path ] }
+      management_network_name: { get_input: mgmt_net }
+
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            args:
+              security_groups: [{ get_attribute: [ haproxy_frontend_security_group, external_name ]}]
+
+    relationships:
+      - type: cloudify.openstack.server_connected_to_keypair
+        target: keypair
+      - type: cloudify.openstack.server_connected_to_floating_ip
+        target: webapp_ip
+      - type: cloudify.openstack.server_connected_to_port
+        target: haproxy_dmz_port
+      - type: cloudify.openstack.server_connected_to_security_group
+        target: haproxy_frontend_security_group
 
   ######################################################
   #                   Ports configuration              #
@@ -242,10 +321,10 @@ node_templates:
       - type: cloudify.openstack.port_connected_to_security_group
         target: security_group
   
-  vwanopz_dmz_port: 
+  vids_dmz_port: 
     type: cloudify.openstack.nodes.Port
     properties:
-      resource_id: { get_input: vwanopz_dmz_port_name }
+      resource_id: { get_input: vids_dmz_port_name }
     relationships:
       - type: cloudify.relationships.contained_in
         target: dmz_network
@@ -253,6 +332,30 @@ node_templates:
         target: dmz_subnet
       - type: cloudify.openstack.port_connected_to_security_group
         target: security_group
+
+  webserver_dmz_port: 
+    type: cloudify.openstack.nodes.Port
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: websrv_node_scaling_tier
+      - type: cloudify.relationships.connected_to
+        target: dmz_network
+      - type: cloudify.relationships.depends_on
+        target: dmz_subnet
+      - type: cloudify.openstack.port_connected_to_security_group
+        target: webserver_security_group
+
+  haproxy_dmz_port: 
+    type: cloudify.openstack.nodes.Port
+    properties:
+      resource_id: { get_input: haproxy_dmz_port_name }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: dmz_network
+      - type: cloudify.relationships.depends_on
+        target: dmz_subnet
+      - type: cloudify.openstack.port_connected_to_security_group
+        target: webserver_security_group
        
   security_group:
     type: cloudify.openstack.nodes.SecurityGroup
@@ -281,8 +384,38 @@ node_templates:
           port_range_min: 1
           port_range_max: 65535
           remote_ip_prefix: 0.0.0.0/0
+
+  webserver_security_group:
+    type: cloudify.openstack.nodes.SecurityGroup
+    properties:
+      security_group:
+        name: webserver_security_group
+      rules:
+        - remote_ip_prefix: 0.0.0.0/0
+          port: { get_property: [ apache2, port ] }
+        - remote_ip_prefix: 0.0.0.0/0
+          port: 22
+
+  haproxy_frontend_security_group:
+    type: cloudify.openstack.nodes.SecurityGroup
+    properties:
+      security_group:
+        name: haproxy_frontend_security_group
+      rules:
+        - remote_ip_prefix: 0.0.0.0/0
+          port: { get_property: [ haproxy, frontend_port ] }
+        - remote_ip_prefix: 0.0.0.0/0
+          port: { get_property: [ haproxy, statistics_port ]}
+        - remote_ip_prefix: 0.0.0.0/0
+          port: 22
    
   vrouter_fl_ip:
+    type: cloudify.openstack.nodes.FloatingIP
+    properties:
+      floatingip:
+        floating_network_name: { get_input: external_network_name }
+
+  webapp_ip:
     type: cloudify.openstack.nodes.FloatingIP
     properties:
       floatingip:
@@ -329,22 +462,19 @@ node_templates:
     properties:
       resource_id: { get_input: dmz_network_name }   
 
-  lan_subnet:
-    type: cloudify.openstack.nodes.Subnet
+  websrv_node_scaling_tier:
+    type: cloudify.nodes.Root
+
+groups:
+  webserver_and_dmzport:
+    members: [webserver_host, webserver_dmz_port]
+
+policies:
+  scale_policy:
+    type: cloudify.policies.scaling
     properties:
-      resource_id: { get_input: lan_subnet_name }
-      subnet:
-        ip_version: 4
-        cidr: 13.0.0.0/24
-        gateway_ip: null      
-    relationships:
-      - target: lan_network
-        type: cloudify.relationships.contained_in
- 
-  lan_network:
-    type: cloudify.openstack.nodes.Network
-    properties:
-      resource_id: { get_input: lan_network_name }   
+      default_instances: { get_input: number_of_instances }
+    targets: [webserver_and_dmzport]
  
 outputs:
  
@@ -358,8 +488,8 @@ outputs:
       vfirewall_vnf:
         vnf_name: { get_property: [ vfirewall_host, resource_id ] }
         public_key_path: { get_property: [ keypair, private_key_path ] }
-      vwanopz_vnf:
-        vnf_name: { get_property: [ vwanopz_host, resource_id ] }
+      vids_vnf:
+        vnf_name: { get_property: [ vids_host, resource_id ] }
         public_key_path: { get_property: [ keypair, private_key_path ] }
        
  
