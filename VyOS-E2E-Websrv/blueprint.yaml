@@ -479,7 +479,7 @@ policies:
 outputs:
  
   vnfs:
-    description: Infomation of vnf.
+    description: Information of vnf.
     value:
       vrouter_vnf:
         vnf_name: { get_property: [ vrouter_host, resource_id ] }
@@ -494,7 +494,7 @@ outputs:
        
  
   networks:
-    description: Infomation of network.
+    description: Information of network.
     value:
       data_plane_network:
         network_name: { get_property: [ data_plane_network, resource_id ] }
