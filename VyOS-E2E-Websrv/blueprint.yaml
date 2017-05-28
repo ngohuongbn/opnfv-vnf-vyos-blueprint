@@ -434,7 +434,7 @@ node_templates:
       resource_id: { get_input: data_plane_subnet_name }
       subnet:
         ip_version: 4
-        cidr: 12.0.0.0/24
+        cidr: 14.0.0.0/24
         gateway_ip: null      
     relationships:
       - target: data_plane_network
@@ -451,7 +451,7 @@ node_templates:
       resource_id: { get_input: dmz_subnet_name }
       subnet:
         ip_version: 4
-        cidr: 11.0.0.0/24
+        cidr: 15.0.0.0/24
         gateway_ip: null      
     relationships:
       - target: dmz_network
