@@ -197,11 +197,13 @@ node_templates:
   ######################################################
  
   vids_host:
-    type: e2e.nodes.MonitoredIDS
+    type: cloudify.openstack.nodes.Server
     properties:     
       resource_id: { get_input: vids_name }
-      agent_config:
-        key: { get_property: [ keypair, private_key_path ] }
+      install_agent: false
+      server:
+        image: { get_input: vids_img_id }
+        flavor: { get_input: vids_flavor_id }
       management_network_name: { get_input: mgmt_net }
     relationships:
       - target: keypair
