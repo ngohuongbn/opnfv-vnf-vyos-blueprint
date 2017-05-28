@@ -110,7 +110,7 @@ inputs:
 
   ids_agent_user:
     type: string
-    default: stack
+    default: centos
 
   number_of_instances:
     description: |
@@ -197,13 +197,11 @@ node_templates:
   ######################################################
  
   vids_host:
-    type: cloudify.openstack.nodes.Server
+    type: e2e.nodes.MonitoredIDS
     properties:     
       resource_id: { get_input: vids_name }
-      install_agent: false
-      server:
-        image: { get_input: vids_img_id }
-        flavor: { get_input: vids_flavor_id }
+      agent_config:
+        key: { get_property: [ keypair, private_key_path ] }
       management_network_name: { get_input: mgmt_net }
     relationships:
       - target: keypair
