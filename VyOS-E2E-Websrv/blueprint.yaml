@@ -108,6 +108,10 @@ inputs:
   vids_flavor_id:
     type: string
 
+  ids_agent_user:
+    type: string
+    default: stack
+
   number_of_instances:
     description: |
       The number of web server instances. Requests to the web servers will
@@ -193,7 +197,7 @@ node_templates:
   ######################################################
  
   vids_host:
-    type: cloudify.openstack.nodes.Server
+    type: e2e.nodes.MonitoredIDS
     properties:     
       resource_id: { get_input: vids_name }
       agent_config:
