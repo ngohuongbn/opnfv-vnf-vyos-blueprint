@@ -190,7 +190,7 @@ node_templates:
   ######################################################
  
   vwanopz_host:
-    type: cpe.nodes.MonitoredWANOps
+    type: cloudify.openstack.nodes.Server
     properties:     
       resource_id: { get_input: vwanopz_name }
       install_agent: false
