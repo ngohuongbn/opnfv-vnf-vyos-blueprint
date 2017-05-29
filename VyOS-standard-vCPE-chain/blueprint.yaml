@@ -193,16 +193,22 @@ node_templates:
     type: cpe.nodes.MonitoredWANOps
     properties:     
       resource_id: { get_input: vwanopz_name }
-      agent_config:
-        key: { get_property: [ keypair, private_key_path ] }
+      install_agent: false
+      server:
+        image: { get_input: vwanopz_img_id }
+        flavor: { get_input: vwanopz_flavor_id }
       management_network_name: { get_input: mgmt_net }
     relationships:
       - target: keypair
-        type: cloudify.openstack.server_connected_to_keypair        
+        type: cloudify.openstack.server_connected_to_keypair   
+      - target: vwanopz_lan_port
+        type: cloudify.openstack.server_connected_to_port
       - target: vwanopz_dmz_port
         type: cloudify.openstack.server_connected_to_port
       - target: security_group
         type: cloudify.openstack.server_connected_to_security_group
+      - target: vwanopz_fl_ip
+        type: cloudify.openstack.server_connected_to_floating_ip
 
   ######################################################
   #                   Ports configuration              #
@@ -255,6 +261,18 @@ node_templates:
         target: dmz_subnet
       - type: cloudify.openstack.port_connected_to_security_group
         target: security_group
+     
+  vwanopz_lan_port: 
+    type: cloudify.openstack.nodes.Port
+    properties:
+      resource_id: { get_input: vwanopz_lan_port_name }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: lan_network
+      - type: cloudify.relationships.depends_on
+        target: lan_subnet
+      - type: cloudify.openstack.port_connected_to_security_group
+        target: security_group
        
   security_group:
     type: cloudify.openstack.nodes.SecurityGroup
@@ -285,6 +303,12 @@ node_templates:
           remote_ip_prefix: 0.0.0.0/0
    
   vrouter_fl_ip:
+    type: cloudify.openstack.nodes.FloatingIP
+    properties:
+      floatingip:
+        floating_network_name: { get_input: external_network_name }
+        
+   vwanopz_fl_ip:
     type: cloudify.openstack.nodes.FloatingIP
     properties:
       floatingip:
