@@ -164,13 +164,7 @@ node_templates:
         target: data_plane_subnet
       - type: cloudify.openstack.port_connected_to_security_group
         target: security_group
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          implementation: openstack.neutron_plugin.port.create
-          inputs:
-            args:
-              allowed_address_pairs: { get_input: dataplane_port_address_pairs }
+
  
   vfirewall_data_plane_port:
     type: cloudify.openstack.nodes.Port
@@ -185,7 +179,7 @@ node_templates:
       - type: cloudify.openstack.port_connected_to_security_group
         target: security_group
  
-     interfaces:
+    interfaces:
       cloudify.interfaces.lifecycle:
         create:
           implementation: openstack.neutron_plugin.port.create
