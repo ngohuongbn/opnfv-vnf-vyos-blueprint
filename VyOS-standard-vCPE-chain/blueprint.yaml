@@ -109,6 +109,10 @@ inputs:
 
   vwanopz_flavor_id:
     type: string
+
+  vwanopz_agent_user:
+    type: string
+    default: tc
  
 node_templates:
  
@@ -193,14 +197,18 @@ node_templates:
       server:
         image: { get_input: vwanopz_img_id }
         flavor: { get_input: vwanopz_flavor_id }
-      management_network_name: { get_property: [lan_network, resource_id] }
+      management_network_name: { get_input: mgmt_net }
     relationships:
       - target: keypair
-        type: cloudify.openstack.server_connected_to_keypair        
+        type: cloudify.openstack.server_connected_to_keypair   
+      - target: vwanopz_lan_port
+        type: cloudify.openstack.server_connected_to_port
       - target: vwanopz_dmz_port
         type: cloudify.openstack.server_connected_to_port
       - target: security_group
         type: cloudify.openstack.server_connected_to_security_group
+      - target: vwanopz_fl_ip
+        type: cloudify.openstack.server_connected_to_floating_ip
 
   ######################################################
   #                   Ports configuration              #
@@ -253,6 +261,18 @@ node_templates:
         target: dmz_subnet
       - type: cloudify.openstack.port_connected_to_security_group
         target: security_group
+     
+  vwanopz_lan_port: 
+    type: cloudify.openstack.nodes.Port
+    properties:
+      resource_id: { get_input: vwanopz_lan_port_name }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: lan_network
+      - type: cloudify.relationships.depends_on
+        target: lan_subnet
+      - type: cloudify.openstack.port_connected_to_security_group
+        target: security_group
        
   security_group:
     type: cloudify.openstack.nodes.SecurityGroup
@@ -287,6 +307,12 @@ node_templates:
     properties:
       floatingip:
         floating_network_name: { get_input: external_network_name }
+        
+   vwanopz_fl_ip:
+    type: cloudify.openstack.nodes.FloatingIP
+    properties:
+      floatingip:
+        floating_network_name: { get_input: external_network_name }
  
   keypair:
     type: cloudify.openstack.nodes.KeyPair
@@ -301,7 +327,7 @@ node_templates:
       resource_id: { get_input: data_plane_subnet_name }
       subnet:
         ip_version: 4
-        cidr: 12.0.0.0/24
+        cidr: 19.0.0.0/24
         gateway_ip: null      
     relationships:
       - target: data_plane_network
@@ -318,7 +344,7 @@ node_templates:
       resource_id: { get_input: dmz_subnet_name }
       subnet:
         ip_version: 4
-        cidr: 11.0.0.0/24
+        cidr: 20.0.0.0/24
         gateway_ip: null      
     relationships:
       - target: dmz_network
@@ -335,7 +361,7 @@ node_templates:
       resource_id: { get_input: lan_subnet_name }
       subnet:
         ip_version: 4
-        cidr: 13.0.0.0/24
+        cidr: 21.0.0.0/24
         gateway_ip: null      
     relationships:
       - target: lan_network
