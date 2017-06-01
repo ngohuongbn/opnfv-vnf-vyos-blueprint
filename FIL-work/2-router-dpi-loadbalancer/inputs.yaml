@@ -1,0 +1,23 @@
+{
+  "data_plane_subnet_name": "data_plane_subnet",
+  "dmz_subnet_name": "dmz_subnet",
+  "mgmt_cidr": "172.16.0.0/16",
+  "vlb_img_id": "de808ef9-fcf2-4ea6-93f0-6ddc6db27cff",
+  "vfirewall_dmz_port_name": "rt_fw_lb_vfirewall_dmz_port",
+  "dmz_network_name": "dmz_network",
+  "vrouter_data_plane_port_name": "rt_fw_lb_vrouter_data_plane_port",
+  "keypair_name": "cfy-agt-key",
+  "vfirewall_img_id": "dfd8dcc0-6b99-4dc6-a6e4-e135953e9db0",
+  "external_network_name": "external",
+  "vrouter_flavor_id": "f946223d-d3ff-4f08-a73f-ede3e16ebca0",
+  "mgmt_net": "cloudify-management-network",
+  "vfirewall_name": "rt-fw-lb-vfirewall-iptables",
+  "vrouter_name": "rt-fw-lb-vrouter-vyos",
+  "vlb_flavor_id": "0f42180b-54a5-412b-8b3f-4112e441c978",
+  "data_plane_network_name": "data_plane_network",
+  "ssh_key_filename": "~/.ssh/agent_key.pem",
+  "security_group_name": "rt_fw_lb_security_group",
+  "vfirewall_flavor_id": "0f42180b-54a5-412b-8b3f-4112e441c978",
+  "vlb_name": "rt-fw-lb-vload-balancer",
+  "vrouter_img_id": "fa2c9d49-635b-460d-ad10-612b4eeacc45"
+}
