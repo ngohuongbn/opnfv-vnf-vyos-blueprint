@@ -1,0 +1,9 @@
+node_types:
+  apache.nodes.WebServer:
+    derived_from: cloudify.nodes.WebServer
+    properties:
+      port:
+        default: { get_input: webserver_port }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: scripts/web/install-apache.sh
