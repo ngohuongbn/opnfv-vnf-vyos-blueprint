@@ -14,7 +14,7 @@
 - 1 chain type
 - multi chain types
 - current system load (cpu, ram, disk capacity) -> time for successful deployments (just 1 incomming request, multiple incomming requests)
-- calculate by using cloudify (duration between 2 start and successful deployment event)
+- calculate by using cloudify (duration between 2 start and successful deployment events)
 - impaction of flavor and real resources usages.
 
 ### Strategies:
