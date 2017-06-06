@@ -40,23 +40,23 @@ inputs:
  
   vrouter_data_plane_port_name:
     type: string
-    default: rt_fw_lb_vrouter_data_plane_port  
+    default: rt_fw_lb_vids_vrouter_data_plane_port  
 
   vfirewall_data_plane_port_name:
     type: string
-    default: rt_fw_lb_vfirewall_data_plane_port 
+    default: rt_fw_lb_vids_vfirewall_data_plane_port 
   
   vfirewall_dmz_port_name:
     type: string
-    default: rt_fw_lb_vfirewall_dmz_port
+    default: rt_fw_lb_vids_vfirewall_dmz_port
     
   vlb_dmz_port_name:
     type: string
-    default: rt_fw_lb_vlb_dmz_port
+    default: rt_fw_lb_vids_vlb_dmz_port
     
   vids_dmz_port_name:
     type: string
-    default: rt_fw_lb_vids_dmz_port
+    default: rt_fw_lb_vids_vids_dmz_port
  
   security_group_name:
     type: string

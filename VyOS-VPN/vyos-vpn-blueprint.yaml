@@ -175,13 +175,18 @@ node_templates:
     properties:
       openstack_config: *openstack_configuration
       resource_id: { get_input: siteA_router_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.contained_in
         target: management_plane_network
       - type: cloudify.relationships.depends_on
         target: management_plane_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: security_group
       - target: siteA_router_fl_ip
         type: cloudify.openstack.port_connected_to_floating_ip
 
@@ -190,13 +195,18 @@ node_templates:
     properties:
       openstack_config: *openstack_configuration
       resource_id: { get_input: siteB_router_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.contained_in
         target: management_plane_network
       - type: cloudify.relationships.depends_on
         target: management_plane_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: security_group
       - target: siteB_router_fl_ip
         type: cloudify.openstack.port_connected_to_floating_ip
 
@@ -205,26 +215,36 @@ node_templates:
     properties:
       openstack_config: *openstack_configuration
       resource_id: { get_input: siteA_router_lan_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.contained_in
         target: siteA_lan
       - type: cloudify.relationships.depends_on
         target: siteA_lan_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: security_group
 
   siteB_router_lan_port:
     type: cloudify.openstack.nodes.Port
     properties:
       openstack_config: *openstack_configuration
       resource_id: { get_input: siteB_router_lan_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.contained_in
         target: siteB_lan
       - type: cloudify.relationships.depends_on
         target: siteB_lan_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: security_group
 
   security_group:
     type: cloudify.openstack.nodes.SecurityGroup
