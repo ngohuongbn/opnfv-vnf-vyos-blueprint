@@ -60,7 +60,7 @@ inputs:
  
   ssh_key_filename:
     type: string
-    default: '/root/.ssh/agent_key.pem'
+    default: '/root/.ssh/cfy-agt-key'
  
   vrouter_name:
     type: string
@@ -81,6 +81,14 @@ inputs:
  
   vfirewall_flavor_id:
     type: string
+    
+  pc_name:
+    type: string
+    default: 'pc_test'
+    
+  pc_dmz_port_name:
+    type: string
+    default: 'pc_dmz_port'
     
   keystone_username:
     type: string
@@ -149,16 +157,35 @@ node_templates:
     relationships:
       - target: keypair
         type: cloudify.openstack.server_connected_to_keypair
+      - target: vfirewall_data_plane_port
+        type: cloudify.openstack.server_connected_to_port   
       - target: vfirewall_dmz_port
         type: cloudify.openstack.server_connected_to_port     
-      - target: vfirewall_data_plane_port
-        type: cloudify.openstack.server_connected_to_port
+
+  ######################################################
+  #                      PC-LAN                        #
+  ###################################################### 
+ 
+  pc:
+    type: cloudify.openstack.nodes.Server
+    properties:
+      openstack_config: *openstack_configuration
+      resource_id: { get_input: pc_name }
+      install_agent: false
+      server:
+        image: { get_input: vfirewall_img_id }
+        flavor: { get_input: vfirewall_flavor_id }
+    relationships:
+      - target: keypair
+        type: cloudify.openstack.server_connected_to_keypair
+      - target: pc_dmz_port
+        type: cloudify.openstack.server_connected_to_port         
  
   vrouter_data_plane_port:
     type: cloudify.openstack.nodes.Port
     properties:     
       openstack_config: *openstack_configuration
-      resource_id: { get_input: vrouter_data_plane_port_name }
+      resource_id: { get_input: vrouter_data_plane_port_name }      
     interfaces:
       cloudify.interfaces.lifecycle:
         create: 
@@ -171,7 +198,7 @@ node_templates:
         target: data_plane_network
       - type: cloudify.relationships.depends_on
         target: data_plane_subnet
-        
+    
   vfirewall_data_plane_port:
     type: cloudify.openstack.nodes.Port
     properties:     
@@ -189,13 +216,30 @@ node_templates:
         target: data_plane_network
       - type: cloudify.relationships.depends_on
         target: data_plane_subnet
-        
 
   vfirewall_dmz_port:
     type: cloudify.openstack.nodes.Port
     properties:     
       openstack_config: *openstack_configuration
       resource_id: { get_input: vfirewall_dmz_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: dmz_network
+      - type: cloudify.relationships.depends_on
+        target: dmz_subnet
+        
+  pc_dmz_port:
+    type: cloudify.openstack.nodes.Port
+    properties:     
+      openstack_config: *openstack_configuration
+      resource_id: { get_input: pc_dmz_port_name }
     interfaces:
       cloudify.interfaces.lifecycle:
         create: 

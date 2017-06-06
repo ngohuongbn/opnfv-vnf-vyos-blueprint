@@ -1,0 +1,78 @@
+node_types:
+  cpe.daemon.IPtables:
+    derived_from: cloudify.nodes.ApplicationModule
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: scripts/vFW/iptables_rules.sh
+
+  cpe.daemon.nDPI:
+    derived_from: cloudify.nodes.ApplicationModule
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: scripts/vDPI/reconfig-ndpi.sh
+        start: scripts/vDPI/start-ntopng.sh
+        stop: scripts/vDPI/stop-ntopng.sh
+ 
+  cpe.nodes.Firewall:
+    derived_from: cloudify.openstack.nodes.Server
+    properties:
+      image:
+        default: { get_input: vfirewall_img_id }
+      flavor:
+        default: { get_input: vfirewall_flavor_id }
+      cloudify_agent:
+        default:
+          user: { get_input: vfirewall_agent_user }
+    interfaces:
+ 
+      cloudify.interfaces.monitoring_agent:
+          install:
+            implementation: diamond.diamond_agent.tasks.install
+            inputs:
+              diamond_config:
+                default:
+                  interval: 1
+          start: diamond.diamond_agent.tasks.start
+          stop: diamond.diamond_agent.tasks.stop
+          uninstall: diamond.diamond_agent.tasks.uninstall
+ 
+      ###########################################################
+      # Adding some collectors. These collectors are necessary
+      # for the Cloudify UI to display the deafult metrics.
+      ###########################################################
+ 
+      cloudify.interfaces.monitoring:
+          start:
+            implementation: diamond.diamond_agent.tasks.add_collectors
+            inputs:
+              collectors_config:
+                default:
+                  CPUCollector: {}
+                  MemoryCollector: {}
+                  LoadAverageCollector: {}
+                  DiskUsageCollector:
+                    config:
+                      devices: x?vd[a-z]+[0-9]*$
+                  NetworkCollector: {}
+     
+###########################################################
+# Relationship
+###########################################################
+ 
+relationships:
+ 
+  ###########################################################
+  # firewall-router relationship
+  ###########################################################
+ 
+  cpe.relationships.connected_to:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        postconfigure:
+          implementation: scripts/set_vrouter_ip.sh
+          inputs:
+            vrouter_ip_address:
+              description: >
+                VyOS router's dataplane ip
+              default: ''
