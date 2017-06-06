@@ -12,7 +12,7 @@ imports:
 inputs:
   external_network_name:
     type: string
-    default: external
+    default: provider
  
   mgmt_net:
     type: string
@@ -40,11 +40,23 @@ inputs:
  
   vrouter_data_plane_port_name:
     type: string
-    default: rt_fw_ids_lb_vrouter_data_plane_port  
+    default: rt_fw_lb_vrouter_data_plane_port  
+
+  vfirewall_data_plane_port_name:
+    type: string
+    default: rt_fw_lb_vfirewall_data_plane_port 
   
   vfirewall_dmz_port_name:
     type: string
-    default: rt_fw_ids_lb_vfirewall_dmz_port
+    default: rt_fw_lb_vfirewall_dmz_port
+    
+  vlb_dmz_port_name:
+    type: string
+    default: rt_fw_lb_vlb_dmz_port
+    
+  vids_dmz_port_name:
+    type: string
+    default: rt_fw_lb_vids_dmz_port
  
   security_group_name:
     type: string
@@ -118,8 +130,6 @@ node_templates:
         type: cloudify.openstack.server_connected_to_keypair        
       - target: vrouter_data_plane_port
         type: cloudify.openstack.server_connected_to_port
-      - target: security_group
-        type: cloudify.openstack.server_connected_to_security_group
  
   ######################################################
   #                   IPtables Firewall                #
@@ -133,14 +143,13 @@ node_templates:
       server:
         image: { get_input: vfirewall_img_id }
         flavor: { get_input: vfirewall_flavor_id }
-      management_network_name: { get_property: [data_plane_network, resource_id] }
     relationships:
       - target: keypair
         type: cloudify.openstack.server_connected_to_keypair
       - target: vfirewall_dmz_port
         type: cloudify.openstack.server_connected_to_port     
-      - target: security_group
-        type: cloudify.openstack.server_connected_to_security_group
+      - target: vfirewall_data_plane_port
+        type: cloudify.openstack.server_connected_to_port    
         
   ######################################################
   #                   load-balancer                    #
@@ -154,12 +163,11 @@ node_templates:
       server:
         image: { get_input: vLB_img_id }
         flavor: { get_input: vLB_flavor_id }
-      management_network_name: { get_property: [dmz_network, resource_id] }
     relationships:
       - target: keypair
         type: cloudify.openstack.server_connected_to_keypair     
-      - target: security_group
-        type: cloudify.openstack.server_connected_to_security_group
+      - target: vlb_dmz_port
+        type: cloudify.openstack.server_connected_to_port  
         
   ######################################################
   #                   ids                              #
@@ -173,36 +181,97 @@ node_templates:
       server:
         image: { get_input: vIDS_img_id }
         flavor: { get_input: vIDS_flavor_id }
-      management_network_name: { get_property: [dmz_network, resource_id] }
     relationships:
       - target: keypair
         type: cloudify.openstack.server_connected_to_keypair     
-      - target: security_group
-        type: cloudify.openstack.server_connected_to_security_group
+      - target: vids_dmz_port
+        type: cloudify.openstack.server_connected_to_port  
  
   vrouter_data_plane_port:
     type: cloudify.openstack.nodes.Port
     properties:     
       resource_id: { get_input: vrouter_data_plane_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.connected_to
         target: data_plane_network
       - type: cloudify.relationships.depends_on
         target: data_plane_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: security_group
+        
+  vfirewall_data_plane_port:
+    type: cloudify.openstack.nodes.Port
+    properties:     
+      resource_id: { get_input: vfirewall_data_plane_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: data_plane_network
+      - type: cloudify.relationships.depends_on
+        target: data_plane_subnet
 
   vfirewall_dmz_port:
     type: cloudify.openstack.nodes.Port
     properties:     
       resource_id: { get_input: vfirewall_dmz_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.connected_to
         target: dmz_network
       - type: cloudify.relationships.depends_on
         target: dmz_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: security_group
+        
+  vlb_dmz_port:
+    type: cloudify.openstack.nodes.Port
+    properties:     
+      resource_id: { get_input: vlb_dmz_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: dmz_network
+      - type: cloudify.relationships.depends_on
+        target: dmz_subnet
+        
+  vids_dmz_port:
+    type: cloudify.openstack.nodes.Port
+    properties:     
+      resource_id: { get_input: vids_dmz_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: dmz_network
+      - type: cloudify.relationships.depends_on
+        target: dmz_subnet
+  
  
   security_group:
     type: cloudify.openstack.nodes.SecurityGroup

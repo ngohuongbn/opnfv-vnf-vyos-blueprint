@@ -52,7 +52,7 @@ inputs:
     
   vlb_dmz_port_name:
     type: string
-    default: vlb_dmz_port
+    default: rt_fw_lb_vlb_dmz_port
  
   security_group_name:
     type: string
