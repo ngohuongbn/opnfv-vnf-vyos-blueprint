@@ -106,8 +106,6 @@ node_templates:
         type: cloudify.openstack.server_connected_to_port
       - target: vrouter_fl_ip
         type: cloudify.openstack.server_connected_to_floating_ip
-      - target: security_group
-        type: cloudify.openstack.server_connected_to_security_group
  
   ######################################################
   #                   IPtables Firewall                #
@@ -154,44 +152,57 @@ node_templates:
         type: cloudify.openstack.server_connected_to_port  
       - target: vfirewall_fl_ip
         type: cloudify.openstack.server_connected_to_floating_ip   
-      - target: security_group
-        type: cloudify.openstack.server_connected_to_security_group
  
   vrouter_data_plane_port:
     type: cloudify.openstack.nodes.Port
     properties:     
       resource_id: { get_input: vrouter_data_plane_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.contained_in
         target: data_plane_network
       - type: cloudify.relationships.depends_on
         target: data_plane_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: security_group
  
   vfirewall_data_plane_port:
     type: cloudify.openstack.nodes.Port
     properties:     
       resource_id: { get_input: vfirewall_dataplane_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.contained_in
         target: data_plane_network
       - type: cloudify.relationships.depends_on
         target: data_plane_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: security_group
 
   vfirewall_dmz_port:
     type: cloudify.openstack.nodes.Port
     properties:     
       resource_id: { get_input: vfirewall_dmz_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.contained_in
         target: dmz_network
       - type: cloudify.relationships.depends_on
         target: dmz_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: security_group
  
   security_group:
     type: cloudify.openstack.nodes.SecurityGroup
