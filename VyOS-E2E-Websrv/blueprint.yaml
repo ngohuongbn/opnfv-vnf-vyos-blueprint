@@ -142,8 +142,6 @@ node_templates:
         type: cloudify.openstack.server_connected_to_port
       - target: vrouter_fl_ip
         type: cloudify.openstack.server_connected_to_floating_ip
-      - target: security_group
-        type: cloudify.openstack.server_connected_to_security_group
  
   ######################################################
   #                   IPtables Firewall                #
@@ -189,8 +187,6 @@ node_templates:
         type: cloudify.openstack.server_connected_to_port 
       - target: vfirewall_dmz_port
         type: cloudify.openstack.server_connected_to_port  
-      - target: security_group
-        type: cloudify.openstack.server_connected_to_security_group
 
   ######################################################
   #                   vIDS Snort                       #
@@ -208,8 +204,6 @@ node_templates:
         type: cloudify.openstack.server_connected_to_keypair        
       - target: vids_dmz_port
         type: cloudify.openstack.server_connected_to_port
-      - target: security_group
-        type: cloudify.openstack.server_connected_to_security_group
 
   ######################################################
   #                   Webserver                        #
@@ -268,13 +262,6 @@ node_templates:
         key: { get_property: [ keypair, private_key_path ] }
       management_network_name: { get_input: mgmt_net }
 
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          inputs:
-            args:
-              security_groups: [{ get_attribute: [ haproxy_frontend_security_group, external_name ]}]
-
     relationships:
       - type: cloudify.openstack.server_connected_to_keypair
         target: keypair
@@ -282,8 +269,6 @@ node_templates:
         target: webapp_ip
       - type: cloudify.openstack.server_connected_to_port
         target: haproxy_dmz_port
-      - type: cloudify.openstack.server_connected_to_security_group
-        target: haproxy_frontend_security_group
 
   ######################################################
   #                   Ports configuration              #
@@ -293,49 +278,70 @@ node_templates:
     type: cloudify.openstack.nodes.Port
     properties:     
       resource_id: { get_input: vrouter_data_plane_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.contained_in
         target: data_plane_network
       - type: cloudify.relationships.depends_on
         target: data_plane_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: security_group
  
   vfirewall_data_plane_port:
     type: cloudify.openstack.nodes.Port
     properties:     
       resource_id: { get_input: vfirewall_dataplane_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.contained_in
         target: data_plane_network
       - type: cloudify.relationships.depends_on
         target: data_plane_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: security_group
 
   vfirewall_dmz_port:
     type: cloudify.openstack.nodes.Port
     properties:     
       resource_id: { get_input: vfirewall_dmz_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.contained_in
         target: dmz_network
       - type: cloudify.relationships.depends_on
         target: dmz_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: security_group
+
   
   vids_dmz_port: 
     type: cloudify.openstack.nodes.Port
     properties:
       resource_id: { get_input: vids_dmz_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.contained_in
         target: dmz_network
       - type: cloudify.relationships.depends_on
         target: dmz_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: security_group
 
   webserver_dmz_port: 
     type: cloudify.openstack.nodes.Port
@@ -353,13 +359,19 @@ node_templates:
     type: cloudify.openstack.nodes.Port
     properties:
       resource_id: { get_input: haproxy_dmz_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
     relationships:
       - type: cloudify.relationships.contained_in
         target: dmz_network
       - type: cloudify.relationships.depends_on
         target: dmz_subnet
-      - type: cloudify.openstack.port_connected_to_security_group
-        target: webserver_security_group
+
        
   security_group:
     type: cloudify.openstack.nodes.SecurityGroup
