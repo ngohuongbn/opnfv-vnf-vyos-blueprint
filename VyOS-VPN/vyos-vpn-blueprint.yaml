@@ -70,6 +70,14 @@ inputs:
   siteB_router_lan_port_name:
     type: string
     default: siteB_router_lan_port
+    
+  siteA_host_lan_port_name:
+    type: string
+    default: siteA_host_lan_port
+    
+  siteB_host_lan_port_name:
+    type: string
+    default: siteB_host_lan_port
 
   security_group_name:
     type: string
@@ -102,7 +110,21 @@ inputs:
 
   siteB_router_flavor_id:
     type: string
-
+    
+  siteA_host_name:
+    type: string
+    default: hostA
+    
+  siteB_host_name:
+    type: string
+    default: hostB
+    
+  host_image_id:
+    type: string
+    
+  host_flavor_id:
+    type: string
+  
 dsl_definitions:
   openstack_configuration: &openstack_configuration
     username: { get_input: keystone_username }
@@ -161,6 +183,36 @@ node_templates:
       - target: siteB_router_port
         type: cloudify.openstack.server_connected_to_port
       - target: siteB_router_lan_port
+        type: cloudify.openstack.server_connected_to_port
+        
+  siteA_host:
+    type: cloudify.openstack.nodes.Server
+    properties:
+      openstack_config: *openstack_configuration
+      resource_id: { get_input: siteA_host_name }
+      install_agent: false
+      server:
+        image: { get_input: host_image_id }
+        flavor: { get_input: host_flavor_id }
+    relationships:
+      - target: keypair
+        type: cloudify.openstack.server_connected_to_keypair
+      - target: siteA_host_lan_port
+        type: cloudify.openstack.server_connected_to_port
+        
+  siteB_host:
+    type: cloudify.openstack.nodes.Server
+    properties:
+      openstack_config: *openstack_configuration
+      resource_id: { get_input: siteB_host_name }
+      install_agent: false
+      server:
+        image: { get_input: host_image_id }
+        flavor: { get_input: host_flavor_id }
+    relationships:
+      - target: keypair
+        type: cloudify.openstack.server_connected_to_keypair
+      - target: siteB_host_lan_port
         type: cloudify.openstack.server_connected_to_port
 
   keypair:
@@ -233,6 +285,42 @@ node_templates:
     properties:
       openstack_config: *openstack_configuration
       resource_id: { get_input: siteB_router_lan_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: siteB_lan
+      - type: cloudify.relationships.depends_on
+        target: siteB_lan_subnet
+        
+  siteA_host_lan_port:
+    type: cloudify.openstack.nodes.Port
+    properties:
+      openstack_config: *openstack_configuration
+      resource_id: { get_input: siteA_host_lan_port_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: 
+          inputs:
+            args:
+                port_security_enabled: false
+                security_groups: []
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: siteA_lan
+      - type: cloudify.relationships.depends_on
+        target: siteA_lan_subnet
+        
+  siteB_host_lan_port:
+    type: cloudify.openstack.nodes.Port
+    properties:
+      openstack_config: *openstack_configuration
+      resource_id: { get_input: siteB_host_lan_port_name }
     interfaces:
       cloudify.interfaces.lifecycle:
         create: 
